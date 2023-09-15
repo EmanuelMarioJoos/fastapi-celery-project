@@ -1,0 +1,87 @@
+version: "3.2"
+services:
+  timescale:
+    image: timescale/timescaledb-ha:pg14.8-ts2.11.1-all
+    platform: linux/x86_64
+    ports:
+      -  "27992:5432"
+    environment:
+      - POSTGRES_PASSWORD=password
+
+  broker:
+    image: redis:7-alpine
+    ports:
+      - 6379:6379
+
+  fast_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      watchmedo auto-restart --directory=./ --pattern=\*.py --recursive -- celery -A main.celery worker -Q high_priority --loglevel=info -n high_priority;
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+    depends_on:
+      - broker
+      - timescale
+
+  slow_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      watchmedo auto-restart --directory=./ --pattern=\*.py --recursive -- celery -A main.celery worker -Q low_priority --loglevel=info -n low_priority;
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+    depends_on:
+      - fast_worker
+
+  beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      celery -A main.celery beat;
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+    depends_on:
+      - slow_worker
+
+  periodic_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    command:
+      celery -A main.celery worker -Q periodic --loglevel=info -n periodic;
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+    depends_on:
+      - beat
+
+  flower:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+        - "127.0.0.1:5555:5555"
+    command:
+      celery -A main.celery flower --port=5555
+    volumes:
+      - ./:/app/
+    environment:
+      - CELERY_BROKER_URL=redis://broker:6379/0
+      - CELERY_RESULT_BACKEND=redis://broker:6379/0
+    depends_on:
+      - periodic_worker

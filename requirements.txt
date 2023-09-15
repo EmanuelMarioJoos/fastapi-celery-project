@@ -1,0 +1,11 @@
+fastapi[all]==0.89.1
+uvicorn==0.20.0
+celery==5.2.7
+redis==4.3.4
+flower==1.2.0
+sqlalchemy==1.4.37
+alembic==1.7.6
+psycopg2==2.9.7
+sqlalchemy-utils==0.38.2
+pre-commit==2.19.0
+watchdog==3.0.0
