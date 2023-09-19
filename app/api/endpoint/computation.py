@@ -12,6 +12,7 @@ from app.schemas.computation import CreateComputation as CreateComputationSchema
 
 from app.tasks import celery_tasks
 
+
 logging.basicConfig(level=logging.INFO, format='%(name)s - %(levelname)s - %(message)s')
 logger = logging.getLogger(__name__)
 
@@ -75,13 +76,21 @@ def add_computation(
         logger.error(f"Exception adding new computation:  {e}")
 
 
-@router.get("/computations_status")
-def status(computation_id: str) -> TaskOut:
-    r = AsyncResult(computation_id)
-    return _to_task_out(r)
+@router.get("/task", summary="get status of tasks per queue")
+def get_status_of_tasks():
+    active = celery_tasks.fast_dummy_task.app.control.inspect().active()
+    queues = [queues for queues in active]
+    result = []
+    for queue in queues:
+        data = []
+        if active[queue]:
+            for task in active[queue]:
+                data.append({str(AsyncResult(task['id']).id): AsyncResult(task['id']).status})
+        result.append({queue: data})
+    return result
 
 
-@router.delete("/computations", summary="Stop task and delete computation")
+@router.delete("/task", summary="Stop task and delete computation")
 def delete(
     computation_id: str,
     db: Session = Depends(get_analytics_db)

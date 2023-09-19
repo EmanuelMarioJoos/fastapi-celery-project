@@ -16,7 +16,7 @@ def fast_dummy_task(self, x):
 @shared_task(bind=True, queue="low_priority")
 def slow_dummy_task(self, x):
     logger.info("starting slow background task")
-    time.sleep(100)
+    time.sleep(x)
     return x
 
 
