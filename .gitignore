@@ -1,4 +1,15 @@
 .idea
-__pychache__
+__pycache__/
 .env
-alembic/__pychache__
+alembic/__pycache__/
+app/__pycache__/
+app/api/__pycache__/
+app/api/endpoint/__pycache__/
+app/celery/__pycache__/
+app/schemas/__pycache__/
+app/tasks/__pycache__/
+app/db/__pycache__/
+
+
+
+
