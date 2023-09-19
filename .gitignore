@@ -8,6 +8,7 @@ app/api/endpoint/__pycache__/
 app/celery/__pycache__/
 app/schemas/__pycache__/
 app/tasks/__pycache__/
+app/db/__pycache__/
 
 
 
